@@ -47,6 +47,7 @@ class WC_PagSeguro_Gateway extends WC_Payment_Gateway {
 		$this->invoice_prefix    = $this->get_option( 'invoice_prefix', 'WC-' );
 		$this->sandbox           = $this->get_option( 'sandbox', 'no' );
 		$this->debug             = $this->get_option( 'debug' );
+                $this->price_off         = $this->get_option( 'price_off_amount' );
 
 		// Active logs.
 		if ( 'yes' == $this->debug ) {
@@ -100,8 +101,19 @@ class WC_PagSeguro_Gateway extends WC_Payment_Gateway {
 	public function get_token() {
 		return 'yes' === $this->sandbox ? $this->sandbox_token : $this->token;
 	}
+        
+        /**
+         * Get PriceOff
+         * 
+         * @return string 
+         */
+        public function get_price_off(){
+            return $this->price_off;
+        }
 
-	/**
+
+
+        /**
 	 * Returns a value indicating the the Gateway is available or not. It's called
 	 * automatically by WooCommerce before allowing customers to use the gateway
 	 * for payment.
@@ -136,6 +148,7 @@ class WC_PagSeguro_Gateway extends WC_Payment_Gateway {
 			if ( ! get_query_var( 'order-received' ) ) {
 				$session_id = $this->api->get_session_id();
 				$suffix     = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+                                $suffix = '';
 
 				wp_enqueue_style( 'pagseguro-checkout', plugins_url( 'assets/css/frontend/transparent-checkout' . $suffix . '.css', plugin_dir_path( __FILE__ ) ), array(), WC_PagSeguro::VERSION );
 				wp_enqueue_script( 'pagseguro-library', $this->api->get_direct_payment_url(), array(), null, true );
@@ -305,6 +318,19 @@ class WC_PagSeguro_Gateway extends WC_Payment_Gateway {
 				'default'     => 'no',
 				'description' => sprintf( __( 'Log PagSeguro events, such as API requests, inside %s', 'woocommerce-pagseguro' ), $this->get_log_view() ),
 			),
+                        'price_off_title' => array(
+                                'title'       => __( 'Descontos' ),
+                                'type'        => 'title',
+                                'description' => '',
+                        ),
+                        'price_off_amount' => array(
+                                'title'       => 'Aplicar desconto de: ',
+                                'type'        => 'text',
+                                'label'       => '',
+                                'desc_tip'    => true,
+                                'css'         => 'width: 50px;',
+                                'description' => 'Apenas para produtos pagos a vista ou boleto bancário. ATENÇÃO! Desconto em %',
+                        ),
 		);
 	}
 
@@ -351,6 +377,7 @@ class WC_PagSeguro_Gateway extends WC_Payment_Gateway {
 				'tc_transfer'       => $this->tc_transfer,
 				'tc_ticket'         => $this->tc_ticket,
 				'tc_ticket_message' => $this->tc_ticket_message,
+                                'price_off'         => $this->price_off,
 				'flag'              => plugins_url( 'assets/images/brazilian-flag.png', plugin_dir_path( __FILE__ ) ),
 			), 'woocommerce/pagseguro/', WC_PagSeguro::get_templates_path() );
 		}
@@ -364,8 +391,36 @@ class WC_PagSeguro_Gateway extends WC_Payment_Gateway {
 	 * @return array
 	 */
 	public function process_payment( $order_id ) {
+                /* @var $order WC_Order */
 		$order = wc_get_order( $order_id );
-
+                
+                // calcular desconto
+                $desconto = 0;
+                $price_off = $this->price_off;
+                $valor_final_calculado = $order->get_total();
+                if ((in_array($_POST['pagseguro_payment_method'], ['banking-ticket', 'bank-transfer'])) ||
+                        ($_POST['pagseguro_payment_method'] === 'credit-card' && $_POST['pagseguro_card_installments'] === '1')) {
+                    $desconto = round($order->get_total() * ($price_off / 100), 2);
+                    $valor_final_calculado = $order->get_total() - $desconto;
+                }
+                
+                // comparar com valor enviado, se diferença <= 5 centavos, considera valor enviado
+                if ($desconto > 0) {
+                    $valor_final_enviado = $_POST['pagseguro_valor_final'] * 1.0;
+                    
+                    if (abs($valor_final_calculado - $valor_final_enviado) > 0.01) {
+                        wc_add_notice('Erro ao verificar desconto');
+                        return array(
+                                'result'   => 'fail',
+                                'redirect' => '',
+                        );
+                    } else if (abs($valor_final_calculado - $valor_final_enviado) === 0.01) {
+                        $valor_final_calculado += $valor_final_calculado - $valor_final_enviado;
+                    }
+                    
+                    $order->set_total($valor_final_calculado);
+                }
+                
 		if ( 'lightbox' != $this->method ) {
 			if ( isset( $_POST['pagseguro_sender_hash'] ) && 'transparent' == $this->method ) {
 				$response = $this->api->do_payment_request( $order, $_POST );
@@ -380,6 +435,17 @@ class WC_PagSeguro_Gateway extends WC_Payment_Gateway {
 			if ( $response['url'] ) {
 				// Remove cart.
 				WC()->cart->empty_cart();
+                                
+                                if ($desconto > 0) {
+                                    $fee = new stdClass();
+                                    $fee->name = "DESCONTO PAGAMENTO A VISTA";
+                                    $fee->taxable = FALSE;
+                                    $fee->amount = -$desconto;
+                                    $fee->tax = 0;
+                                    $fee->tax_data = [];
+                                    $order->add_fee($fee);
+                                    $order->save();
+                                }
 
 				return array(
 					'result'   => 'success',

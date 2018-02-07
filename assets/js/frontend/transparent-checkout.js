@@ -5,6 +5,52 @@
 	$( function() {
 
 		var pagseguro_submit = false;
+                
+                function pagSeguroRound(number, precision) {
+                    var factor = Math.pow(10, precision);
+                    var tempNumber = number * factor;
+                    var roundedTempNumber = Math.round(tempNumber);
+                    return roundedTempNumber / factor;
+                };
+                
+                function calculaDesconto(){
+                    var $ = jQuery;
+                    var method = $('input[name=pagseguro_payment_method]:checked').val();
+                    var instalments = $('#pagseguro-card-installments option:selected').val();
+                    var amount = $( 'body #pagseguro-payment-form' ).data( 'cart_total' );
+                    var desconto = false;
+                    var desconto_valor = 0.00;
+                    var price_off = $('input[name=pagseguro_price_off]').val();
+
+                    if (method === 'bank-transfer' || method === 'banking-ticket'){
+                        desconto = true;
+                    } else if (method === 'credit-card' && instalments === '1'){
+                        desconto = true;
+                    }
+
+                    if (desconto){
+                        var desconto_valor = pagSeguroRound(amount * (price_off / 100), 2);
+                    }
+                    
+                    amount = pagSeguroRound(amount - desconto_valor, 2);
+
+                    $('input[name=pagseguro_desconto]').val(desconto_valor);
+                    $('input[name=pagseguro_valor_final]').val(amount);
+
+                    $('#discount-amount-pagseguro').text(pagSeguroGetPriceTextWithoutCurrency(desconto_valor));
+                    $('tr.order-total td span.amount').contents().each(function() {
+                        if (this.nodeType === 3) {
+                            this.textContent
+                            ? this.textContent = pagSeguroGetPriceTextWithoutCurrency(amount)
+                            : this.innerText  = pagSeguroGetPriceTextWithoutCurrency(amount);
+                        }
+                    });
+                }
+
+                function getValorComDesconto() {
+                    var amount = jQuery( 'body #pagseguro-payment-form' ).data( 'cart_total' );
+                    return amount * 0.85;
+                }
 
 		/**
 		 * Set credit card brand.
@@ -23,8 +69,12 @@
 		 * @return {string}
 		 */
 		function pagSeguroGetPriceText( price ) {
-			return 'R$ ' + parseFloat( price, 10 ).toFixed( 2 ).replace( '.', ',' ).toString();
+			return 'R$ ' + pagSeguroGetPriceTextWithoutCurrency( price );
 		}
+                
+                function pagSeguroGetPriceTextWithoutCurrency( price ) {
+                        return parseFloat( price, 10 ).toFixed( 2 ).replace( '.', ',' ).toString();
+                } 
 
 		/**
 		 * Get installment option.
@@ -225,7 +275,16 @@
 			// Switch the payment method form.
 			$( 'body' ).on( 'click', '#pagseguro-payment-methods input[type=radio]', function() {
 				pagSeguroShowHideMethodForm( $( this ).val() );
+                                calculaDesconto();
 			});
+                        
+                        $( 'body' ).on( 'change', '#pagseguro-card-installments', function() {
+                                calculaDesconto();
+                        });
+                        
+                        $( 'body' ).on( 'updated_checkout', function() {
+                                calculaDesconto();
+                        });
 
 			// Get the credit card brand.
 			$( 'body' ).on( 'focusout', '#pagseguro-card-number', function() {
@@ -278,7 +337,13 @@
 								instalmments.append( '<option value="0">--</option>' );
 
 								$.each( data.installments[brand], function( index, installment ) {
+                                                                    if (installment.quantity === 1) {
+                                                                        installment.installmentAmount = getValorComDesconto();
+                                                                    }
+                                                                    
+                                                                    if (installment.quantity <= 3){
 									instalmments.append( pagSeguroGetInstallmentOption( installment ) );
+                                                                    }
 								});
 							} else {
 								pagSeguroAddErrorMessage( wc_pagseguro_params.invalid_card );

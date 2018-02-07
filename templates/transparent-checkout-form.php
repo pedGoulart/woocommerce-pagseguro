@@ -10,9 +10,20 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
+
+
+$globals = new WC_PagSeguro_Gateway();
 ?>
 
 <fieldset id="pagseguro-payment-form" class="<?php echo 'storefront' === basename( get_template_directory() ) ? 'woocommerce-pagseguro-form-storefront' : ''; ?>" data-cart_total="<?php echo esc_attr( number_format( $cart_total, 2, '.', '' ) ); ?>">
+    
+        <input type="hidden" name="pagseguro_valor_final" val="0">
+        <input type="hidden" name="pagseguro_desconto" val="0">
+        <input type="hidden" name="pagseguro_price_off" val="<?php $price_off ?>">
+        
+        <?php var_dump($price_off);
+                die();
+        ?>
 
 	<ul id="pagseguro-payment-methods">
 		<?php if ( 'yes' == $tc_credit ) : ?>
@@ -31,42 +42,42 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 	<?php if ( 'yes' == $tc_credit ) : ?>
 		<div id="pagseguro-credit-card-form" class="pagseguro-method-form">
-			<p id="pagseguro-card-holder-name-field" class="form-row form-row-first">
-				<label for="pagseguro-card-holder-name"><?php _e( 'Card Holder Name', 'woocommerce-pagseguro' ); ?> <small>(<?php _e( 'as recorded on the card', 'woocommerce-pagseguro' ); ?>)</small> <span class="required">*</span></label>
-				<input id="pagseguro-card-holder-name" name="pagseguro_card_holder_name" class="input-text" type="text" autocomplete="off" style="font-size: 1.5em; padding: 8px;" />
-			</p>
-			<p id="pagseguro-card-number-field" class="form-row form-row-last">
+			<p id="pagseguro-card-number-field" class="form-row form-row-first">
 				<label for="pagseguro-card-number"><?php _e( 'Card Number', 'woocommerce-pagseguro' ); ?> <span class="required">*</span></label>
-				<input id="pagseguro-card-number" class="input-text wc-credit-card-form-card-number" type="tel" maxlength="20" autocomplete="off" placeholder="&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull;" style="font-size: 1.5em; padding: 8px;" />
+				<input id="pagseguro-card-number" class="input-text wc-credit-card-form-card-number" type="tel" maxlength="20" autocomplete="off" placeholder="" style="padding: 8px;" />
+			</p>
+			<p id="pagseguro-card-holder-name-field" class="form-row form-row-last">
+				<label for="pagseguro-card-holder-name"><?php _e( 'Nome', 'woocommerce-pagseguro' ); ?> <small>(<?php _e( 'as recorded on the card', 'woocommerce-pagseguro' ); ?>)</small> <span class="required">*</span></label>
+				<input id="pagseguro-card-holder-name" name="pagseguro_card_holder_name" class="input-text" type="text" autocomplete="off" style="padding: 8px;" />
 			</p>
 			<div class="clear"></div>
 			<p id="pagseguro-card-expiry-field" class="form-row form-row-first">
-				<label for="pagseguro-card-expiry"><?php _e( 'Expiry (MM/YYYY)', 'woocommerce-pagseguro' ); ?> <span class="required">*</span></label>
-				<input id="pagseguro-card-expiry" class="input-text wc-credit-card-form-card-expiry" type="tel" autocomplete="off" placeholder="<?php _e( 'MM / YYYY', 'woocommerce-pagseguro' ); ?>" style="font-size: 1.5em; padding: 8px;" />
+				<label for="pagseguro-card-expiry"><?php _e( 'Vencimento', 'woocommerce-pagseguro' ); ?> <small>(<?php _e( 'MM/AAAA', 'woocommerce-pagseguro' ); ?>)</small> <span class="required">*</span></label>
+				<input id="pagseguro-card-expiry" class="input-text wc-credit-card-form-card-expiry" type="tel" autocomplete="off" placeholder="<?php _e( 'MM / YYYY', 'woocommerce-pagseguro' ); ?>" style="padding: 8px;" />
 			</p>
 			<p id="pagseguro-card-cvc-field" class="form-row form-row-last">
 				<label for="pagseguro-card-cvc"><?php _e( 'Security Code', 'woocommerce-pagseguro' ); ?> <span class="required">*</span></label>
-				<input id="pagseguro-card-cvc" class="input-text wc-credit-card-form-card-cvc" type="tel" autocomplete="off" placeholder="<?php _e( 'CVC', 'woocommerce-pagseguro' ); ?>" style="font-size: 1.5em; padding: 8px;" />
+				<input id="pagseguro-card-cvc" class="input-text wc-credit-card-form-card-cvc" type="tel" autocomplete="off" placeholder="<?php _e( 'CVC', 'woocommerce-pagseguro' ); ?>" style="padding: 8px;" />
 			</p>
 			<div class="clear"></div>
 			<p id="pagseguro-card-installments-field" class="form-row form-row-first">
-				<label for="pagseguro-card-installments"><?php _e( 'Installments', 'woocommerce-pagseguro' ); ?> <small>(<?php _e( 'the minimum value of the installment is R$ 5,00', 'woocommerce-pagseguro' ); ?>)</small> <span class="required">*</span></label>
-				<select id="pagseguro-card-installments" name="pagseguro_card_installments" style="font-size: 1.5em; padding: 4px; width: 100%;" disabled="disabled">
+				<label for="pagseguro-card-installments"><?php _e( 'Installments', 'woocommerce-pagseguro' ); ?> <small>(<?php _e( 'minimum value R$ 5,00', 'woocommerce-pagseguro' ); ?>)</small> <span class="required">*</span></label>
+				<select id="pagseguro-card-installments" name="pagseguro_card_installments" style="padding: 4px; width: 100%;" disabled="disabled">
 					<option value="0">--</option>
 				</select>
 			</p>
 			<p id="pagseguro-card-holder-cpf-field" class="form-row form-row-last">
 				<label for="pagseguro-card-holder-cpf"><?php _e( 'Card Holder CPF', 'woocommerce-pagseguro' ); ?> <span class="required">*</span></label>
-				<input id="pagseguro-card-holder-cpf" name="pagseguro_card_holder_cpf" class="input-text wecfb-cpf-field" type="tel" autocomplete="off" style="font-size: 1.5em; padding: 8px;" />
+				<input id="pagseguro-card-holder-cpf" name="pagseguro_card_holder_cpf" class="input-text wecfb-cpf-field" type="tel" autocomplete="off" style="padding: 8px;" />
 			</p>
 			<div class="clear"></div>
 			<p id="pagseguro-card-holder-birth-date-field" class="form-row form-row-first">
-				<label for="pagseguro-card-holder-birth-date"><?php _e( 'Card Holder Birth Date', 'woocommerce-pagseguro' ); ?> <span class="required">*</span></label>
-				<input id="pagseguro-card-holder-birth-date" name="pagseguro_card_holder_birth_date" class="input-text" type="tel" autocomplete="off" placeholder="<?php _e( 'DD / MM / YYYY', 'woocommerce-pagseguro' ); ?>" style="font-size: 1.5em; padding: 8px;" />
+				<label for="pagseguro-card-holder-birth-date"><?php _e( 'Nascimento do portador', 'woocommerce-pagseguro' ); ?> <span class="required">*</span></label>
+				<input id="pagseguro-card-holder-birth-date" name="pagseguro_card_holder_birth_date" class="input-text" type="tel" autocomplete="off" placeholder="<?php _e( 'DD / MM / YYYY', 'woocommerce-pagseguro' ); ?>" style="padding: 8px;" />
 			</p>
 			<p id="pagseguro-card-holder-phone-field" class="form-row form-row-last">
 				<label for="pagseguro-card-holder-phone"><?php _e( 'Card Holder Phone', 'woocommerce-pagseguro' ); ?> <span class="required">*</span></label>
-				<input id="pagseguro-card-holder-phone" name="pagseguro_card_holder_phone" class="input-text" type="tel" autocomplete="off" placeholder="<?php _e( '(xx) xxxx-xxxx', 'woocommerce-pagseguro' ); ?>" style="font-size: 1.5em; padding: 8px;" />
+				<input id="pagseguro-card-holder-phone" name="pagseguro_card_holder_phone" class="input-text" type="tel" autocomplete="off" placeholder="<?php _e( '(xx) xxxx-xxxx', 'woocommerce-pagseguro' ); ?>" style="padding: 8px;" />
 			</p>
 			<div class="clear"></div>
 		</div>
@@ -79,7 +90,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<li><label><input type="radio" name="pagseguro_bank_transfer" value="itau" /><i id="pagseguro-icon-itau"></i><span><?php _e( 'Banco Ita&uacute;', 'woocommerce-pagseguro' ); ?></span></label></li>
 				<li><label><input type="radio" name="pagseguro_bank_transfer" value="bancodobrasil" /><i id="pagseguro-icon-bancodobrasil"></i><span><?php _e( 'Banco do Brasil', 'woocommerce-pagseguro' ); ?></span></label></li>
 				<li><label><input type="radio" name="pagseguro_bank_transfer" value="banrisul" /><i id="pagseguro-icon-banrisul"></i><span><?php _e( 'Banco Banrisul', 'woocommerce-pagseguro' ); ?></span></label></li>
-				<li><label><input type="radio" name="pagseguro_bank_transfer" value="bradesco" /><i id="pagseguro-icon-bradesco"></i><span><?php _e( 'Banco Bradesco', 'woocommerce-pagseguro' ); ?></span></label></li>
+				<li><label><input type="radio" name="pagseguro_bank_transfer" value="hsbc" /><i id="pagseguro-icon-hsbc"></i><span><?php _e( 'Banco HSBC', 'woocommerce-pagseguro' ); ?></span></label></li>
 			</ul>
 			<p><?php _e( '* After clicking "Proceed to payment" you will have access to the link that will take you to your bank\'s website, so you can make the payment in total security.', 'woocommerce-pagseguro' ); ?></p>
 			<div class="clear"></div>
