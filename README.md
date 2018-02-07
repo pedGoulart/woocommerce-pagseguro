@@ -323,8 +323,10 @@ Por favor, caso você tenha algum problema com o funcionamento do plugin, [abra 
 * Melhorado o checkout transparente quando usado o tema Storefront.
 * Adicionada opções para token e e-mail de sandbox.
 
-## Upgrade Notice ##
-
 ### 2.12.5 ###
 
 * Corrigido valor total das parcelas do cartão de crédito no checkout transparente, o valor tinha parado de ser atualizado no WooCommerce 3.0.
+
+## Upgrade Notice ##
+
+* Permite a criação de descontos em porcentagem sobre o valor da compra feita, esse desconto é aplicado em todos os produtos do site pode ser setado pelo administrador do site no painel de admin.
